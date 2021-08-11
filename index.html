@@ -1,0 +1,566 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>reveal.js</title>
+
+    <link rel="stylesheet" href="dist/reset.css">
+    <link rel="stylesheet" href="dist/reveal.css">
+    <link rel="stylesheet" href="dist/theme/black.css">
+
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="plugin/highlight/monokai.css">
+
+    <script src="https://cdn.plot.ly/plotly-2.3.0.min.js"></script>
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <section>
+            <h2>
+                Исполняем музыку с помощью кода
+            </h2>
+            <div style="font-size: 0.8em">Роман Скурихин</div>
+        </section>
+        <section>
+			<h3>Результат</h3>
+			<audio style="display: block; margin: 10px auto 0;" src="main_example.mp3" controls></audio>
+        </section>
+        <section>
+            <h3>Что такое звук?</h3>
+            <canvas class="fragment" style="width: 600px; height: 200px;" width="600" height="200"
+                    id="pressure-xy"></canvas>
+            <br/>
+            <div class="fragment" id="chart" style="width: 600px; height: 200px; margin: 0 auto;"></div>
+        </section>
+        <section>
+            <h3>Как работает динамик</h3>
+            <img src="8ftl.gif">
+        </section>
+        <section>
+            <h3>Семлирование звука</h3>
+            <img style="height: 300px;" src="sampling.jpg">
+        </section>
+        <section>
+            <h3>Частота семплирования</h3>
+            <img style="height: 300px;" src="aliasing.jpg">
+        </section>
+        <section>
+            <h3>Частота семплирования</h3>
+            <p>Теорема Котельникова:</p>
+            \[F_{\text{sampling}} \ge 2 F_{\text{max in signal}} \]
+            <p>Человек слышит: 16 - 20000 Гц</p>
+            <p>Популярная частота <br> семплирования: 44100 Гц</p>
+        </section>
+		<section>
+			<h3>Пример "функции звука"</h3>
+			<section>
+				<img src="screen_1.png">
+			</section>
+			<section>
+				<img src="screen_2.png">
+			</section>
+			<section>
+				<img src="screen_3.png">
+			</section>
+			<section>
+				<img src="screen_4.png">
+			</section>
+			<section>
+				<img src="screen_5.png">
+			</section>
+			<section>
+				<img src="screen_6.png">
+			</section>
+		</section>
+        <section>
+            <h3>Синтезируем синус</h3>
+            <section>
+					<pre><code class="language-python" data-line-numbers="|3|5|6|7-8|9|10|11">import math
+
+SAMPLE_RATE = 44100
+
+def gen_samples(freq: float, duration_sec: float) -> list[float]:
+	samples_cnt = int(duration_sec * SAMPLE_RATE)
+	res = []
+	for sample_idx in range(samples_cnt):
+		time = sample_idx / SAMPLE_RATE
+		res.append(math.sin(time * 2 * math.PI * freq))
+	return res
+					</code></pre>
+            </section>
+            <section>
+					<pre><code class="language-cpp" data-line-numbers="|4|6|7|8-9|10|11|12">#include &lt;cmath&gt;
+#include &lt;vector&gt;
+
+const int SAMPLE_RATE = 44100;
+
+std::vector&lt;double&gt; gen_samples(double freq, double duration_sec) {
+	int samples_cnt = duration_sec * SAMPLE_RATE;
+	std::vector&lt;double&gt; res;
+	for (int sample_idx = 0; sample_idx < samples_cnt; sample_idx++) {
+		double time = sample_idx * 1.0 / SAMPLE_RATE;
+		res.push_back(sin(time * 2 * M_PI * freq));
+	}
+	return res;
+}</code></pre>
+            </section>
+        </section>
+        <section>
+            <h4>Формат .WAV файла</h4>
+			<section>
+			<table class="r-fit-text">
+				<thead>
+				<tr>
+					<td>Размер и длина</td>
+					<td>Поле</td>
+					<td>Описание</td>
+				</tr>
+				</thead>
+				<tbody>
+				<tr>
+					<td>0…3 (4 байта)</td>
+					<td><code>chunkId</code></td>
+					<td>Символы «RIFF» в ASCII кодировке.
+					</td>
+				</tr>
+				<tr>
+					<td>4…7 (4 байта)</td>
+					<td><code>chunkSize</code></td>
+					<td>Размер файла в байтах минус 8.
+					</td>
+				</tr>
+				<tr>
+					<td>8…11 (4 байта)</td>
+					<td><code>format</code></td>
+					<td>Символы «WAVE» в ASCII кодировке.</td>
+				</tr>
+				<tr>
+					<td>12…15 (4 байта)</td>
+					<td><code>subchunk1Id</code></td>
+					<td>Символы "fmt " в ASCII кодировке.</td>
+				</tr>
+				<tr>
+					<td>16…19 (4 байта)</td>
+					<td><code>subchunk1Size</code></td>
+					<td>Число 16 для PCM.
+				</tr>
+				<tr>
+					<td>20…21 (2 байта)</td>
+					<td><code>audioFormat</code></td>
+					<td>Код формата семплов. Число 1 для PCM.
+					</td>
+				</tr>
+				</tbody>
+			</table></section>
+			<section>
+			<table class="r-fit-text">
+				<thead>
+				<tr>
+					<td>Размер и длина</td>
+					<td>Поле</td>
+					<td>Описание</td>
+				</tr>
+				</thead>
+				<tbody>
+				<tr>
+					<td>22…23 (2 байта)</td>
+					<td><code>numChannels</code></td>
+					<td>Количество каналов. Число 1 в Моно</td>
+				</tr>
+				<tr>
+					<td>24…27 (4 байта)</td>
+					<td><code>sampleRate</code></td>
+					<td>Частота дискретизации. 44100.</td>
+				</tr>
+
+				<tr>
+					<td>28…31 (4 байта)</td>
+					<td><code>byteRate</code></td>
+					<td>Байт на секунду записи.
+						<code>(sampleRate * numChannels * bitsPerSample) / 8</code><br/>
+						88200 в нашем случае</td>
+				</tr>
+				<tr>
+					<td>32…33 (2 байта)</td>
+					<td><code>blockAlign</code></td>
+					<td>Количество байт для одного сэмпла.
+						<code>(numChannels * bitsPerSample) / 8</code><br/>
+						2 в нашем случае
+					</td>
+				</tr>
+				</tbody>
+			</table></section>
+			<section>
+				<table class="r-fit-text">
+					<thead>
+					<tr>
+						<td>Размер и длина</td>
+						<td>Поле</td>
+						<td>Описание</td>
+					</tr>
+					</thead>
+					<tbody>
+				<tr>
+					<td>34…35 (2 байта)</td>
+					<td><code>bitsPerSample</code></td>
+					<td>Количество бит в сэмпле. 16 в нашем случае.
+					</td>
+				</tr>
+				<tr>
+					<td>36…39 (4 байта)</td>
+					<td><code>subchunk2Id</code></td>
+					<td>Содержит символы "data"  в ASCII кодировке.</td>
+				</tr>
+				<tr>
+					<td>40…43 (4 байта)</td>
+					<td><code>subchunk2Size</code></td>
+					<td>Размер области данных в байтах.</td>
+				</tr>
+				<tr>
+					<td>44…</td>
+					<td><code>data</code></td>
+					<td>Непосредственно данные семплов. 16 бит (short) числа, записанные последовательно
+					</td>
+				</tr>
+				</tbody>
+			</table>
+			</section>
+        </section>
+		<section>
+			<h4>Записываем WAV файл</h4>
+			<section>
+			<pre><code class="language-python" data-line-numbers="|1|2-3|5|6-22|23|24-26">def write_samples(file_name: str, samples: list[float]) -> None:
+	cnt_samples = len(samples)
+	data_size = cnt_samples * 2
+
+	with open(file_name, "wb") as file:
+		file.write(b"RIFF")                        # chunkId
+		file.write(
+		  (data_size + 36).to_bytes(4, 'little')   # chunkSize
+		)
+		file.write(b"WAVE")                        # format
+		file.write(b"fmt ")                        # subchunk1Id
+		file.write((16).to_bytes(4, 'little'))     # subchunk1Size
+		file.write((1).to_bytes(2, 'little'))      # audioFormat
+		file.write((1).to_bytes(2, 'little'))      # numChannels
+		file.write((44100).to_bytes(4, 'little'))  # sampleRate
+		file.write((88200).to_bytes(4, 'little'))  # byteRate
+		file.write((2).to_bytes(2, 'little'))      # blockAlign
+		file.write((16).to_bytes(2, 'little'))     # bitsPerSample
+		file.write(b"data")                        # subchunk2Id
+		file.write(
+		  data_size.to_bytes(4, 'little')          # subchunk2Size
+		)
+		short_range = (2 ** 15) - 1
+		for sample in samples:
+			sample_short = int(sample * short_range)
+			file.write(sample_short.to_bytes(2, 'little'))</code></pre>
+			</section>
+			<section>
+				<pre><code class="language-cpp" data-line-numbers="|5-19|21|25-39|40|42|43-46">#include &lt;vector&gt;
+#include &lt;string&gt;
+#include &lt;fstream&gt;
+
+struct WavHeader {
+    char chunkId[4];
+    int chunkSize;
+    char format[4];
+    char subchunk1Id[4];
+    int subchunk1Size;
+    short audioFormat;
+    short numChannels;
+    int sampleRate;
+    int byteRate;
+    short blockAlign;
+    short bitsPerSample;
+    char subchunk2Id[4];
+    int subchunk2Size;
+};
+
+void write_samples(std::string const& filename, std::vector&lt;double&gt; & samples) {
+    int cnt_samples = samples.size();
+    int data_size = cnt_samples * 2;
+    std::ofstream file(filename, std::ios::out | std::ios::binary);
+    WavHeader header = {
+        {'R', 'I', 'F', 'F'},
+        36 +data_size,
+        {'W', 'A', 'V', 'E'},
+        {'f', 'm', 't', ' '},
+        16,
+        1,
+        1,
+        44100,
+        88200,
+        2,
+        16,
+        {'d', 'a', 't', 'a'},
+        data_size
+    };
+    file.write((char*)&header, sizeof(header));
+
+    short short_range = (1 << 15) - 1;
+    for (int i = 0; i < samples.size(); i++) {
+        short sample = samples[i] * short_range;
+        file.write((char*)&sample, sizeof(short));
+    }
+    file.close();
+}
+</code></pre>
+			</section>
+		</section>
+		<section>
+			<h3>"Гудок"</h3>
+			<pre><code class="language-python">
+				samples = gen_samples(440, 10)
+				write_samples("example1.wav", samples)
+			</code></pre>
+			<audio style="display: block; margin: 10px auto 0;" src="example1.wav" controls></audio>
+		</section>
+		<section>
+			<h3>"Кузнечек"</h3>
+			<pre><code class="language-python">
+samples = gen_samples(0, 1.2)
+samples += gen_samples(349.22, 0.4)
+
+samples += gen_samples(261.62, 0.4)
+samples += gen_samples(349.22, 0.4)
+samples += gen_samples(261.62, 0.4)
+samples += gen_samples(349.22, 0.4)
+
+samples += gen_samples(329.62, 0.4)
+samples += gen_samples(0, 0.01)
+samples += gen_samples(329.62, 0.8)
+samples += gen_samples(0, 0.01)
+samples += gen_samples(329.62, 0.4)
+
+samples += gen_samples(261.62, 0.4)
+samples += gen_samples(329.62, 0.4)
+samples += gen_samples(261.62, 0.4)
+samples += gen_samples(329.62, 0.4)
+
+samples += gen_samples(349.22, 0.4)
+samples += gen_samples(0, 0.01)
+samples += gen_samples(349.22, 0.8)
+samples += gen_samples(0, 0.01)
+samples += gen_samples(349.22, 0.4)
+
+write_samples("example2.wav", samples)
+			</code></pre>
+			<audio style="display: block; margin: 10px auto 0;" src="example2.wav" controls></audio>
+		</section>
+		<section>
+			<h3>Связь ноты с частотой</h3>
+			<img src="notes_keys.jpg">
+		</section>
+		<section>
+			<h3>Связь ноты с частотой</h3>
+			<p>A4 = 440 Гц</p>
+			<p class="fragment">A5 = 880 Гц</p>
+			<p class="fragment">A5 = \( 440 \cdot x^{12} \) Гц \( \implies x^{12} = 2 \) </p>
+			<p class="fragment">\( x = \sqrt[\leftroot{-2}\uproot{2}12]{2} \)</p>
+			<p class="fragment">\[\text{Freq}({\text{ноты})} = 440 \cdot 2^{\frac{\text{расстояние в полутонах от A4}}{12}} \]</p>
+		</section>
+		<section>
+			<h3>Связь ноты с частотой</h3>
+			<pre><code class="language-python" data-line-numbers="|1-9|11|12|13|14-18|19-20">TONE_MAP = {
+    "C": 0,
+    "D": 2,
+    "E": 4,
+    "F": 5,
+    "G": 7,
+    "A": 9,
+    "B": 11,
+}
+
+def get_freq(note: str) -> float:  # A4, C3b, ...
+    octave = int(note[1])
+    tone_idx = octave * 12 + TONE_MAP[note[0]]
+    if len(note) == 3:
+        if note[2] == "b":
+            tone_idx -= 1
+        if note[2] == "#":
+            tone_idx += 1
+    diff = tone_idx - 57   # A4
+    return 440 * math.pow(2, (diff / 12))
+			</code></pre>
+		</section>
+		<section>
+			<h3>Нотный стан</h3>
+			<img style="height: 400px;" src="notenames.jpg">
+		</section>
+		<section>
+			<h3>Длительности нот</h3>
+			<img style="height: 400px;" src="note_length.jpeg">
+		</section>
+		<section>
+			<h3>Длительности нот (BPM)</h3>
+			<img style="height: 300px; background: white;" src="bpm.png">
+			<p>120 четвертей в минуту - 0.5 сек четверть - 2 секунды целая</p>
+		</section>
+		<section>
+			<h3>"Струнное звучание"</h3>
+			<section>
+				<ol>
+					<li>Генерируем один период случайных семплов</li>
+					<li>Каждый следующий семпл - это среднее значение между
+						семплами ровно на один период назад</li>
+				</ol>
+			</section>
+			<section>
+				<pre><code class="language-python" data-line-numbers="|5|6|7|8|9|10|11|12">from random import random
+
+SAMPLE_RATE = 44100
+
+def gen_samples(freq: float, duration_sec: float) -> list[float]:
+    samples_cnt = int(duration_sec * SAMPLE_RATE)
+    period_size = int(1 / freq * SAMPLE_RATE)
+    res = [random() * 2 - 1 for _ in range(period_size)]
+    for sample_idx in range(period_size, samples_cnt):
+        period_before_idx = sample_idx - period_size
+        sample = (res[period_before_idx] + res[period_before_idx + 1]) / 2
+        res.append(sample)
+    return res
+				</code></pre>
+			</section>
+			<section>
+				<p>Кузнечик</p>
+				<audio style="display: block; margin: 10px auto 0;" src="example3.wav" controls></audio>
+			</section>
+		</section>
+		<section>
+			<h3>Аккорды</h3>
+			<section>
+				<img src="accord.png">
+				<p>Семплы суммируются, но нужно следить за громкостью</p>
+			</section>
+			<section>
+			<pre><code class="language-python"  data-line-numbers="|1-2|3|5|6">samples1 = gen_samples(get_freq("C5"), quarter)
+samples2 = gen_samples(get_freq("F5"), quarter)
+samples = [x + y for x, y in zip(samples1, samples2)]
+...
+max_sample = max(abs(x) for x in samples)
+samples = [x / max_sample for x in samples]
+			</code></pre>
+			</section>
+		</section>
+		<section>
+			<h3>Спасибо за внимание!</h3>
+		</section>
+    </div>
+</div>
+
+<script src="dist/reveal.js"></script>
+<script src="plugin/notes/notes.js"></script>
+<script src="plugin/markdown/markdown.js"></script>
+<script src="plugin/highlight/highlight.js"></script>
+<script src="plugin/math/math.js"></script>
+<script>
+    // More info about initialization & config:
+    // - https://revealjs.com/initialization/
+    // - https://revealjs.com/config/
+    Reveal.initialize({
+        hash: true,
+        // Learn about plugins: https://revealjs.com/plugins/
+        plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealMath]
+    });
+    // Slide 3 code
+    const W1 = 600;
+    const H1 = 200;
+    const U1 = 33;
+    const U2 = 33;
+    const B2 = 200;
+
+    let xyCanvax = document.getElementById("pressure-xy");
+    let xyCtx = xyCanvax.getContext('2d');
+
+    const sx = Math.floor(H1 * 0.5);
+    const sy = Math.floor(H1 * 0.5);
+    const tx = Math.floor(W1 * 0.8);
+    const ty = Math.floor(H1 * 0.33);
+    const time0 = Date.now();
+    let getL = function (x, y, timeDelta) {
+        let dist = Math.sqrt((sx - x) * (sx - x) + (sy - y) * (sy - y));
+        dist -= timeDelta / 40;
+        return (1 + Math.sin(dist * 0.05)) / 2;
+    }
+
+    let updateXY = function () {
+        let data = xyCtx.createImageData(W1, H1);
+        let time = Date.now();
+        let timeDelta = time - time0;
+        for (let x = 0; x < W1; x++) {
+            for (let y = 0; y < H1; y++) {
+                const offset = (y * W1 + x) * 4;
+                let L = getL(x, y, timeDelta);
+                L = Math.pow(L, 1.5); // Gamma correction
+                data.data[offset] = Math.floor(255 * L);
+                data.data[offset + 1] = Math.floor(255 * L);
+                data.data[offset + 2] = Math.floor(255 * L);
+                data.data[offset + 3] = 255;
+            }
+        }
+        xyCtx.putImageData(data, 0, 0);
+        xyCtx.beginPath();
+        xyCtx.arc(tx, ty, 5, 0, Math.PI * 2);
+        xyCtx.fillStyle = "#FF0000";
+        xyCtx.fill();
+    }
+
+    const zeros = [];
+    for (let i = 0; i < B2; i++) {
+        zeros.push(0);
+    }
+    Plotly.newPlot('chart', [{
+        y: zeros,
+        type: 'line'
+    }], {
+        margin: {
+            l: 50,
+            r: 50,
+            b: 20,
+            t: 20,
+            pad: 4
+        }
+    }, {
+        displayModeBar: false, // this is the line that hides the bar.
+    });
+
+    let cnt = B2;
+    let updatePlot = function () {
+        let time = Date.now();
+        let timeDelta = time - time0;
+        const L = getL(tx, ty, timeDelta);
+        Plotly.extendTraces('chart', {y: [[L]]}, [0]);
+        cnt++;
+        if (cnt > B2) {
+            Plotly.relayout('chart', {
+                xaxis: {
+                    range: [cnt - B2, cnt]
+                }
+            });
+        }
+    };
+    let intervalXYid = null;
+    let intervalPlotid = null;
+
+    Reveal.on('slidechanged', event => {
+        if (event.indexh === 2) {
+            intervalXYid = setInterval(updateXY, U1);
+            intervalPlotid = setInterval(updatePlot, U2);
+        } else {
+            if (intervalXYid != null) {
+                clearInterval(intervalXYid);
+                intervalXYid = null;
+            }
+            if (intervalPlotid != null) {
+                clearInterval(intervalPlotid);
+                intervalPlotid = null;
+            }
+        }
+    });
+</script>
+</body>
+</html>
