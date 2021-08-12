@@ -257,7 +257,7 @@ std::vector&lt;double&gt; gen_samples(double freq, double duration_sec) {
 		short_range = (2 ** 15) - 1
 		for sample in samples:
 			sample_short = int(sample * short_range)
-			file.write(sample_short.to_bytes(2, 'little'))</code></pre>
+			file.write(sample_short.to_bytes(2, 'little', signed=True))</code></pre>
 			</section>
 			<section>
 				<pre><code class="language-cpp" data-line-numbers="|5-19|21|25-39|40|42|43-46">#include &lt;vector&gt;
